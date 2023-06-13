@@ -1,16 +1,13 @@
-FROM node:16
+FROM ubi9/ubi-minimal
 
-# Create app directory
-WORKDIR /usr/src/app
+LABEL maintainer="Nick Schuetz <nschuetz@redhat.com>"
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-COPY package*.json ./
-
-RUN npm install
-
-# Bundle app source
-COPY . .
-
-EXPOSE 8085
-CMD [ "node", "server.js" ]
+WORKDIR /app
+RUN chgrp -R 0 /app && \
+    chmod -R g=u /app
+COPY ["./epicpinball/package.json", "./epicpinball/_site", "./"]
+RUN microdnf update -y && microdnf install npm -y && microdnf clean all
+RUN npm install && npm audit fix --force && npm cache clean --force
+EXPOSE 8081
+ENV npm_config_cache="/app"
+CMD [ "npm", "run", "start", "--loglevel=verbose" ]
